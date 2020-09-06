@@ -5,15 +5,16 @@
 #define OK 0
 #define ERR 1
 #define ERR_LEN -1
+#define ERR_NUMBER 3
+#define ZERO_DIVISION 2
 #define EMPTY -3
-#define MAXLEN 40
+#define MAXLEN 30
 typedef char string_t[MAXLEN];
 typedef struct
 {
     char mant_sign;
-    long mantissa[MAXLEN];
+    long mantissa[2 * MAXLEN];
     size_t mant_len;
-    char deg_sign;
     long deg;
 } number;
 long read_str(FILE **f, string_t s, size_t max)
@@ -38,10 +39,11 @@ long read_str(FILE **f, string_t s, size_t max)
 
 int str_into_num(string_t s, number *n)
 {
+    short is_dot = 0, is_e = 0, not_zero = 0;
+    char sign = '+';
+    size_t i = 0, p = 0;
     n->mant_sign = '+';
-    n->deg_sign = '+';
     n->deg = 0;
-    short i = 0, is_dot = 0, is_e = 0, p = 0, not_zero = 0;
     if (isdigit(*s))
     {
         if (*s != '0')
@@ -62,7 +64,7 @@ int str_into_num(string_t s, number *n)
         if (*s == '+' || *s == '-')
         {
             if (is_e)
-                n->deg_sign = *s;
+                sign = *s;
             else
                 return ERR;
         }
@@ -70,7 +72,7 @@ int str_into_num(string_t s, number *n)
         {
             if (is_e)
             {
-                n->deg = strtol(s, NULL, 10);
+                n->deg = strtoll(s, NULL, 10);
                 break;
             }
             else
@@ -92,20 +94,19 @@ int str_into_num(string_t s, number *n)
             return ERR;
         s++;
     }
-    if (n->deg_sign == '-')
+    if (sign == '-')
+    {
         n->deg += p;
+        n->deg *= -1;
+    }
     else
         n->deg -= p;
     n->mant_len = i;
-    printf("%c", n->mant_sign);
-    for (int k = 0; k < i; k++)
-        printf("%ld", n->mantissa[k]);
-    printf("%c", n->deg_sign);
-    printf("%ld", n->deg);
     return OK;
 }
-int minus(long a[MAXLEN], size_t na, long b[MAXLEN], size_t nb)
+int minus(long a[], size_t na, long b[], size_t nb)
 {
+    long i = nb - 1, el;
     if (nb > na)
         return ERR;
     if (na == nb)
@@ -117,7 +118,6 @@ int minus(long a[MAXLEN], size_t na, long b[MAXLEN], size_t nb)
                 return ERR;
         }
     
-    long i = nb - 1, el;
     for (long j = na - 1; j >= 0; j--)
     {
         if (i < 0)
@@ -150,68 +150,113 @@ int minus(long a[MAXLEN], size_t na, long b[MAXLEN], size_t nb)
 
     return OK;
 }
-int divide(number *a, number *b, number *r)
+void divide(number *a, number *b, number *r)
 {
-    //size_t k = 0;
-    r->deg = 0;
-    r->deg_sign = '+';
+    short not_zero = 0;
+    long *ptr = &(a->mantissa)[0];
+    long count = 0;
+    size_t real = a->mant_len;
+    r->mant_len = 0;
+    r->deg = a->deg - b->deg;
     while (a->mant_len < b->mant_len)
     {
-        a->mantissa[a->mant_len - 1] = 0;
         a->mant_len++;
-        r->deg++;
+        a->mantissa[a->mant_len - 1] = 0;
+        r->deg--;
     }
-    if (r->deg > 0)
-        r->deg_sign = '-';
     if (a->mant_sign != b->mant_sign)
         r->mant_sign = '-';
     else
         r->mant_sign = '+';
-    for (size_t i = b->mant_len; i < a->mant_len; i++)
+    for (size_t i = b->mant_len; i <= a->mant_len; i++)
     {
-        while(minus(a->mantissa, a->mant_len, b->mantissa, b->mant_len) == OK)
+        count = 0;
+        while(minus(ptr, i, b->mantissa, b->mant_len) == OK)
         {
-            long j = 0;
-            while((a->mantissa)[j] == )
+            count++;
+            while(*ptr == 0 && i > 0)
+            {
+                ptr++;
+                a->mant_len--;
+                i--;
+            }
+        }
+        if (count || not_zero)
+        {
+            r->mantissa[(r->mant_len)++] = count;
+            not_zero = 1;
+        }
+        if (i == a->mant_len && i != 0)
+        {
+            if (r->mant_len < MAXLEN && real < 2 * MAXLEN)
+            {
+                r->deg--;
+                ptr[i] = 0;
+                a->mant_len++;
+                real++;
+            }
+            else
+                break;
         }
     }
-    
-    return OK;
 }
 void print_num(number *a)
 {
-    
+    a->deg += a->mant_len;
+    if (a->deg > 99999)
+    {
+        printf("NaN");
+        return;
+    }
+    if (a->deg < -99999)
+    {
+        printf("0");
+        return;
+    }
+    if (a->mant_sign == '-')
+        printf("-");
+    printf("0.");
+    for (int k = 0; k < a->mant_len; k++)
+        printf("%ld", a->mantissa[k]);
+    printf("E");
+    printf("%ld", a->deg);
 }
 int main(int argc, char **argv)
 {
     string_t s;
     number a, b, r;
-    if (read_str(&stdin, s, MAXLEN) < 1)
-        return ERR;
-    str_into_num(s, &a);
-    if (read_str(&stdin, s, MAXLEN) < 1)
-        return ERR;
-    str_into_num(s, &b);
+    if (read_str(&stdin, s, MAXLEN + 1) < 1)
+    {
+        printf("String is too large");
+        return ERR_LEN;
+    }
+    if (str_into_num(s, &a) != OK)
+    {
+        printf("Incorrect format of number");
+        return ERR_NUMBER;
+    }
+    if (read_str(&stdin, s, MAXLEN + 1) < 1)
+    {
+        printf("String is too large");
+        return ERR_LEN;
+    }
+    if (str_into_num(s, &b) != OK)
+    {
+        printf("Incorrect format of number");
+        return ERR_NUMBER;
+    }
+    size_t i = 0;
+    while (i < b.mant_len)
+        if (b.mantissa[i] == 0)
+            i++;
+        else
+            break;
+    if (i == b.mant_len || b.deg < -99999)
+    {
+        printf("Zero division");
+        return ZERO_DIVISION;
+    }
     divide(&a, &b, &r);
-//    print_num(&r);
+    print_num(&r);
     return OK;
 }
-//    long a[100], b[100], na, nb;
-//    char y;
-//    scanf("%ld\n", &na);
-//    for (int i = 0; i < na; i++)
-//    {
-//        scanf("%c", &y);
-//        a[i] = (long)y - '0';
-//    }
-//    scanf("%ld\n", &nb);
-//    for (int i = 0; i < nb; i++)
-//    {
-//        scanf("%c", &y);
-//        b[i] = (long)y - '0';
-//    }
-//    for (size_t l = 0; l < na; l++)
-//        printf("%ld ", a[l]);
-//    for (size_t l = 0; l < nb; l++)
-//        printf("%ld ", b[l]);
-//    minus(a, na, b, nb);
