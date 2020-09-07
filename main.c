@@ -13,7 +13,7 @@ typedef char string_t[MAXLEN];
 typedef struct
 {
     char mant_sign;
-    long mantissa[2 * MAXLEN];
+    short mantissa[2 * MAXLEN + 1];
     size_t mant_len;
     long deg;
 } number;
@@ -102,9 +102,11 @@ int str_into_num(string_t s, number *n)
     else
         n->deg -= p;
     n->mant_len = i;
+    if (n->mant_len > MAXLEN)
+        return ERR;
     return OK;
 }
-int minus(long a[], size_t na, long b[], size_t nb)
+int minus(short a[], size_t na, short b[], size_t nb)
 {
     long i = nb - 1, el;
     if (nb > na)
@@ -117,7 +119,14 @@ int minus(long a[], size_t na, long b[], size_t nb)
             if (a[j] < b[j])
                 return ERR;
         }
-    
+    size_t k = 0;
+    while (k < na)
+        if (a[k] == 0)
+            k++;
+        else
+            break;
+    if (k == na)
+        return ERR;
     for (long j = na - 1; j >= 0; j--)
     {
         if (i < 0)
@@ -153,7 +162,7 @@ int minus(long a[], size_t na, long b[], size_t nb)
 void divide(number *a, number *b, number *r)
 {
     short not_zero = 0;
-    long *ptr = &(a->mantissa)[0];
+    short *ptr = &(a->mantissa)[0];
     long count = 0;
     size_t real = a->mant_len;
     r->mant_len = 0;
@@ -188,7 +197,7 @@ void divide(number *a, number *b, number *r)
         }
         if (i == a->mant_len && i != 0)
         {
-            if (r->mant_len < MAXLEN && real < 2 * MAXLEN)
+            if (r->mant_len < MAXLEN + 1 && real < 2 * MAXLEN + 1)
             {
                 r->deg--;
                 ptr[i] = 0;
@@ -199,13 +208,29 @@ void divide(number *a, number *b, number *r)
                 break;
         }
     }
+//    for (size_t k = 0; k < 31; k++)
+//        printf("%ld", r->mantissa[k]);
+}
+void inc_num(short a[], size_t *n)
+{
+    a[*n - 1]++;
+    long i = *n - 1;
+    while (a[i] == 10)
+    {
+        a[i] = 0;
+        (*n)--;
+        a[i - 1]++;
+        i--;
+        if (i == 0 && a[i] == 10)
+            a[0] = 1;
+    }
 }
 void print_num(number *a)
 {
     a->deg += a->mant_len;
     if (a->deg > 99999)
     {
-        printf("NaN");
+        printf("infinity");
         return;
     }
     if (a->deg < -99999)
@@ -216,16 +241,39 @@ void print_num(number *a)
     if (a->mant_sign == '-')
         printf("-");
     printf("0.");
-    for (int k = 0; k < a->mant_len; k++)
-        printf("%ld", a->mantissa[k]);
+    while (!a->mantissa[a->mant_len - 1])
+        a->mant_len--;
+        
+    if (a->mant_len == MAXLEN + 1)
+    {
+        if (a->mantissa[a->mant_len - 1] >= 5)
+        {
+            a->mant_len--;
+            inc_num(a->mantissa, &(a->mant_len));
+        }
+        else
+            a->mant_len--;
+        
+    }
+    for (size_t k = 0; k < a->mant_len; k++)
+        printf("%d", a->mantissa[k]);
+    
     printf("E");
     printf("%ld", a->deg);
 }
-int main(int argc, char **argv)
+void fill_zero(short *a, size_t n)
+{
+    for (size_t i = 0; i < n; i++)
+        a[i] = 0;
+}
+int main()
 {
     string_t s;
     number a, b, r;
-    if (read_str(&stdin, s, MAXLEN + 1) < 1)
+    fill_zero(a.mantissa, 2 * MAXLEN + 1);
+    fill_zero(b.mantissa, 2 * MAXLEN + 1);
+    fill_zero(r.mantissa, 2 * MAXLEN + 1);
+    if (read_str(&stdin, s, MAXLEN + 10) < 1)
     {
         printf("String is too large");
         return ERR_LEN;
@@ -235,7 +283,9 @@ int main(int argc, char **argv)
         printf("Incorrect format of number");
         return ERR_NUMBER;
     }
-    if (read_str(&stdin, s, MAXLEN + 1) < 1)
+
+    
+    if (read_str(&stdin, s, MAXLEN + 10) < 1)
     {
         printf("String is too large");
         return ERR_LEN;
@@ -251,7 +301,7 @@ int main(int argc, char **argv)
             i++;
         else
             break;
-    if (i == b.mant_len || b.deg < -99999)
+    if (i == b.mant_len)
     {
         printf("Zero division");
         return ZERO_DIVISION;
