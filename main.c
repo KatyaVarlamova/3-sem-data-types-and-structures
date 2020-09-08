@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#define NOTDEBUG 0
 #define OK 0
 #define ERR 1
 #define ERR_LEN -1
@@ -9,6 +10,7 @@
 #define ZERO_DIVISION 2
 #define EMPTY -3
 #define MAXLEN 30
+#define MAXDEG 99999
 typedef char string_t[MAXLEN];
 // структура имитирует представление действительного числа
 typedef struct
@@ -27,7 +29,7 @@ long read_str(FILE **f, string_t s, size_t max)
 {
     size_t i = 0;
     int c = fgetc(*f);
-    while (c == '\n')
+    while (c == ' ')
         c = fgetc(*f);
     while (c != '\n' && c != EOF)
     {
@@ -96,13 +98,20 @@ int str_into_num(string_t s, number *n)
             }
         }
         else if ((*s) == '.')
-            is_dot = 1;
+        {
+            if (!is_dot)
+                is_dot = 1;
+            else
+                return ERR;
+        }
         else if ((*s) == 'E' || (*s) == 'e')
             is_e = 1;
         else
             return ERR;
         s++;
     }
+    if (n->deg > MAXDEG || n->deg < -MAXDEG)
+        return ERR;
     if (sign == '-')
     {
         n->deg += p;
@@ -194,10 +203,7 @@ int divide(number *a, number *b, number *r)
         else
             break;
     if (j == b->mant_len)
-    {
-        printf("Zero division");
         return ZERO_DIVISION;
-    }
     size_t real = a->mant_len;
     r->mant_len = 0;
     r->deg = a->deg - b->deg;
@@ -273,12 +279,12 @@ void inc_num(short a[], size_t *n)
 void print_num(number *a)
 {
     a->deg += a->mant_len;
-    if (a->deg > 99999)
+    if (a->deg > MAXDEG)
     {
         printf("infinity");
         return;
     }
-    if (a->deg < -99999)
+    if (a->deg < -MAXDEG)
     {
         printf("0");
         return;
@@ -316,30 +322,44 @@ int main()
     fill_zero(a.mantissa, 2 * MAXLEN + 1);
     fill_zero(b.mantissa, 2 * MAXLEN + 1);
     fill_zero(r.mantissa, 2 * MAXLEN + 1);
+    if (NOTDEBUG)
+    {
+        printf("This program divides integer number on a real\n");
+        printf("Length of integer number and manttissa of real number <= 30 (not empty);\n");
+        printf("Degree of numbers in range of: -99999 <= deg <= 99999;\n");
+        printf("The result will be presented in a following format:\n(+/-)0.<mantissa>E(+/-)<degree>\n");
+        printf("Please, follow some rules :\n- use dot (not a comma) for real numbers;\n- don't use spaces between parts of number;\n- after mantissa you may(!) use format: e/E<degree>;\n");
+        printf("Input dividend: ");
+    }
     if (read_str(&stdin, s, MAXLEN + 10) < 1)
     {
-        printf("String is too large");
+        printf("String is empty or too large\n");
         return ERR_LEN;
     }
     if (str_into_num(s, &a) != OK)
     {
-        printf("Incorrect format of number");
+        printf("Incorrect format of number\n");
         return ERR_NUMBER;
     }
-
-    
+    if (NOTDEBUG)
+        printf("Input divider: ");
     if (read_str(&stdin, s, MAXLEN + 10) < 1)
     {
-        printf("String is too large");
+        printf("String is empty or too large\n");
         return ERR_LEN;
     }
     if (str_into_num(s, &b) != OK)
     {
-        printf("Incorrect format of number");
+        printf("Incorrect format of number\n");
         return ERR_NUMBER;
     }
     if (divide(&a, &b, &r) != OK)
+    {
+        printf("Zero division\n");
         return ZERO_DIVISION;
+    }
+    if (NOTDEBUG)
+        printf("Result: ");
     print_num(&r);
     return OK;
 }
