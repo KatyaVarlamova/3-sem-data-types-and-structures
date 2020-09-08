@@ -10,6 +10,7 @@
 #define EMPTY -3
 #define MAXLEN 30
 typedef char string_t[MAXLEN];
+// структура имитирует представление действительного числа
 typedef struct
 {
     char mant_sign;
@@ -17,6 +18,11 @@ typedef struct
     size_t mant_len;
     long deg;
 } number;
+
+/// Функция читает строку. В случае успеха возвращает длину строки, иначе возвращает отрицательный код.
+/// @param f поток, из которого читаются данные
+/// @param s строка, в укоторой будут помещены данные
+/// @param max максимальная длина строки (должен учитываться нулевой символ)
 long read_str(FILE **f, string_t s, size_t max)
 {
     size_t i = 0;
@@ -37,6 +43,9 @@ long read_str(FILE **f, string_t s, size_t max)
     return i;
 }
 
+///  Преобразует строку, в которой записано действительное число (в различных форматах), в структуру number. В случае успеха возвращает 0, иначе ненулевое значение.
+/// @param s строка с исходным числом
+/// @param n указатель на структуру number
 int str_into_num(string_t s, number *n)
 {
     short is_dot = 0, is_e = 0, not_zero = 0;
@@ -106,9 +115,25 @@ int str_into_num(string_t s, number *n)
         return ERR;
     return OK;
 }
+
+///  Имитирует операцию вычитания a - b, где a и b представлены массивами (целочисленными). Результат будет размещён в массиве a. В случае успеха функция возвращает 0, иначе ненулевое значение.
+/// @param a массив, в котором размещено число, из которого будет произведено вычитание
+/// @param na длина массива a
+/// @param b массив, в котором размещено вычитаемое число
+/// @param nb длина массива b
 int minus(short a[], size_t na, short b[], size_t nb)
 {
     long i = nb - 1, el;
+    size_t k = 0;
+    // проверка на учёт незначащих нулей
+    while (k < na)
+        if (a[k] == 0)
+            k++;
+        else
+            break;
+    if (k == na)
+        return ERR;
+    // проверки на возможность совершения операции
     if (nb > na)
         return ERR;
     if (na == nb)
@@ -119,14 +144,7 @@ int minus(short a[], size_t na, short b[], size_t nb)
             if (a[j] < b[j])
                 return ERR;
         }
-    size_t k = 0;
-    while (k < na)
-        if (a[k] == 0)
-            k++;
-        else
-            break;
-    if (k == na)
-        return ERR;
+    // имитация операции вычитания в столбик
     for (long j = na - 1; j >= 0; j--)
     {
         if (i < 0)
@@ -145,7 +163,7 @@ int minus(short a[], size_t na, short b[], size_t nb)
                 long k = 1;
                 while (a[j - k] < 0)
                 {
-                    a[j - k] += 3;
+                    a[j - k] += 9;
                     k++;
                 }
                 a[j - k]--;
@@ -159,26 +177,46 @@ int minus(short a[], size_t na, short b[], size_t nb)
 
     return OK;
 }
-void divide(number *a, number *b, number *r)
+/// Имитирует операцию деления a на b, где a и b представлены структурами number. Результат будет размещён в структуре r.
+/// @param a структура с делимым
+/// @param b структура с делителем
+/// @param r структура с частным
+int divide(number *a, number *b, number *r)
 {
     short not_zero = 0;
     short *ptr = &(a->mantissa)[0];
     long count = 0;
+    size_t j = 0;
+    // проверка на возможность совершения операции
+    while (j < b->mant_len)
+        if (b->mantissa[j] == 0)
+            j++;
+        else
+            break;
+    if (j == b->mant_len)
+    {
+        printf("Zero division");
+        return ZERO_DIVISION;
+    }
     size_t real = a->mant_len;
     r->mant_len = 0;
     r->deg = a->deg - b->deg;
+    // дополнение нулями делимое и уменьшение порядка результата, если количество символов в делимом меньше, чем в делителе
     while (a->mant_len < b->mant_len)
     {
         a->mant_len++;
         a->mantissa[a->mant_len - 1] = 0;
         r->deg--;
     }
+    // определение знака результата
     if (a->mant_sign != b->mant_sign)
         r->mant_sign = '-';
     else
         r->mant_sign = '+';
+    // имитация деления в столбик
     for (size_t i = b->mant_len; i <= a->mant_len; i++)
     {
+        // производим вычитание делителя из части делимого до тех пор, пока возможно, и считаем количество успешных вичитаний
         count = 0;
         while(minus(ptr, i, b->mantissa, b->mant_len) == OK)
         {
@@ -190,11 +228,14 @@ void divide(number *a, number *b, number *r)
                 i--;
             }
         }
+        // записываем количество вычитаний в мантиссу результата (не учитываем незначащие нули)
         if (count || not_zero)
         {
             r->mantissa[(r->mant_len)++] = count;
             not_zero = 1;
         }
+        // если в делимом больше нет цифр, а остаток от деления есть, то дописываем ноль к делимому и уменьшаем порядок результата
+        // делаем это до тех пор, пока в мантиссе результата есть место или до тех пор, пока размер массива с делимым позволяет дописывать нули
         if (i == a->mant_len && i != 0)
         {
             if (r->mant_len < MAXLEN + 1 && real < 2 * MAXLEN + 1)
@@ -208,9 +249,11 @@ void divide(number *a, number *b, number *r)
                 break;
         }
     }
-//    for (size_t k = 0; k < 31; k++)
-//        printf("%ld", r->mantissa[k]);
+    return OK;
 }
+///  имитация операции a + 1, где a - масиив, в котором записано число
+/// @param a массив с числом
+/// @param n  его длина
 void inc_num(short a[], size_t *n)
 {
     a[*n - 1]++;
@@ -225,6 +268,8 @@ void inc_num(short a[], size_t *n)
             a[0] = 1;
     }
 }
+/// Выводит действительное число на экран в нормализованном виде
+/// @param a структура number
 void print_num(number *a)
 {
     a->deg += a->mant_len;
@@ -241,11 +286,9 @@ void print_num(number *a)
     if (a->mant_sign == '-')
         printf("-");
     printf("0.");
-    while (!a->mantissa[a->mant_len - 1])
-        a->mant_len--;
-        
     if (a->mant_len == MAXLEN + 1)
     {
+        // округление числа
         if (a->mantissa[a->mant_len - 1] >= 5)
         {
             a->mant_len--;
@@ -253,11 +296,11 @@ void print_num(number *a)
         }
         else
             a->mant_len--;
-        
     }
+    while (!a->mantissa[a->mant_len - 1])
+        a->mant_len--;
     for (size_t k = 0; k < a->mant_len; k++)
         printf("%d", a->mantissa[k]);
-    
     printf("E");
     printf("%ld", a->deg);
 }
@@ -295,18 +338,8 @@ int main()
         printf("Incorrect format of number");
         return ERR_NUMBER;
     }
-    size_t i = 0;
-    while (i < b.mant_len)
-        if (b.mantissa[i] == 0)
-            i++;
-        else
-            break;
-    if (i == b.mant_len)
-    {
-        printf("Zero division");
+    if (divide(&a, &b, &r) != OK)
         return ZERO_DIVISION;
-    }
-    divide(&a, &b, &r);
     print_num(&r);
     return OK;
 }
