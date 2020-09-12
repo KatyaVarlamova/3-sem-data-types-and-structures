@@ -83,7 +83,10 @@ int str_into_num(string_t s, number *n)
         {
             if (is_e)
             {
-                n->deg = strtoll(s, NULL, 10);
+                char *end = NULL;
+                n->deg = strtoll(s, &end, 10);
+                if ((*end) != '\0')
+                    return ERR;
                 break;
             }
             else
@@ -260,8 +263,10 @@ int divide(number *a, number *b, number *r)
 ///  имитация операции a + 1, где a - масиив, в котором записано число
 /// @param a массив с числом
 /// @param n  его длина
-void inc_num(short a[], size_t *n)
+/// @param is_full отслеживание переполнения
+void inc_num(short a[], size_t *n, int *is_full)
 {
+    *is_full = 0;
     a[*n - 1]++;
     long i = *n - 1;
     while (a[i] == 10)
@@ -271,7 +276,10 @@ void inc_num(short a[], size_t *n)
         a[i - 1]++;
         i--;
         if (i == 0 && a[i] == 10)
-            a[0] = 1;
+        {
+            a[i] = 1;
+            *is_full = 1;
+        }
     }
 }
 /// Выводит действительное число на экран в нормализованном виде
@@ -297,8 +305,11 @@ void print_num(number *a)
         // округление числа
         if (a->mantissa[a->mant_len - 1] >= 5)
         {
+            int is_full;
             a->mant_len--;
-            inc_num(a->mantissa, &(a->mant_len));
+            inc_num(a->mantissa, &(a->mant_len), &is_full);
+            if (is_full)
+                a->deg++;
         }
         else
             a->mant_len--;
@@ -343,6 +354,7 @@ int main()
     }
     if (NOTDEBUG)
         printf("Input divider: ");
+    
     if (read_str(&stdin, s, MAXLEN + 10) < 1)
     {
         printf("String is empty or too large\n");
@@ -363,3 +375,4 @@ int main()
     print_num(&r);
     return OK;
 }
+
