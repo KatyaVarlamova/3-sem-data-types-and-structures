@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#define NOTDEBUG 1
+#define NOTDEBUG 0
 #define OK 0
 #define ERR 1
 #define ERR_LEN -1
@@ -48,7 +48,7 @@ long read_str(FILE **f, string_t s, size_t max)
 ///  Преобразует строку, в которой записано действительное число (в различных форматах), в структуру number. В случае успеха возвращает 0, иначе ненулевое значение.
 /// @param s строка с исходным числом
 /// @param n указатель на структуру number
-int str_into_num(string_t s, number *n)
+int str_into_num(string_t s, number *n, int is_int)
 {
     short is_dot = 0, is_e = 0, not_zero = 0;
     char sign = '+';
@@ -64,7 +64,11 @@ int str_into_num(string_t s, number *n)
         }
     }
     else if ((*s) == '.')
+    {
+        if (is_int)
+            return ERR;
         is_dot = 1;
+    }
     else if (*s == '+' || *s == '-')
         n->mant_sign = *s;
     else
@@ -74,6 +78,8 @@ int str_into_num(string_t s, number *n)
     {
         if (*s == '+' || *s == '-')
         {
+            if (is_int)
+                return ERR;
             if (is_e)
                 sign = *s;
             else
@@ -102,13 +108,19 @@ int str_into_num(string_t s, number *n)
         }
         else if ((*s) == '.')
         {
+            if (is_int)
+                return ERR;
             if (!is_dot)
                 is_dot = 1;
             else
                 return ERR;
         }
         else if ((*s) == 'E' || (*s) == 'e')
+        {
+            if (is_int)
+                return ERR;
             is_e = 1;
+        }
         else
             return ERR;
         s++;
@@ -347,7 +359,7 @@ int main()
         printf("String is empty or too large\n");
         return ERR_LEN;
     }
-    if (str_into_num(s, &a) != OK)
+    if (str_into_num(s, &a, 1) != OK)
     {
         printf("Incorrect format of number\n");
         return ERR_NUMBER;
@@ -360,7 +372,7 @@ int main()
         printf("String is empty or too large\n");
         return ERR_LEN;
     }
-    if (str_into_num(s, &b) != OK)
+    if (str_into_num(s, &b, 0) != OK)
     {
         printf("Incorrect format of number\n");
         return ERR_NUMBER;
