@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#define NOTDEBUG 0
+#define NOTDEBUG 1
 #define OK 0
 #define ERR 1
 #define ERR_LEN -1
