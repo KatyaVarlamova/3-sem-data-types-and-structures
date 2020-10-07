@@ -1,0 +1,88 @@
+position: 3; value: 16.570000
+position: 1; value: 23.700000
+position: 2; value: 45.250000
+position: 6; value: 47.780000
+position: 4; value: 53.520000
+position: 9; value: 57.970000
+position: 0; value: 78.250000
+position: 8; value: 88.080000
+position: 7; value: 89.910000
+position: 5; value: 99.610000
+trademark: mazda
+country: belarus
+price: 16.570000
+color: gray
+year: 1969
+mileage: 515736
+repairs: 1
+owners: 3
+
+trademark: toyota
+country: france
+price: 23.700000
+color: green
+guarantee: 8
+
+trademark: renault
+country: italy
+price: 45.250000
+color: blue
+guarantee: 15
+
+trademark: kia
+country: china
+price: 47.780000
+color: white
+guarantee: 9
+
+trademark: honda
+country: germany
+price: 53.520000
+color: purple
+year: 1960
+mileage: 152259
+repairs: 3
+owners: 1
+
+trademark: mazda
+country: spain
+price: 57.970000
+color: blue
+guarantee: 17
+
+trademark: volvo
+country: UK
+price: 78.250000
+color: green
+year: 1960
+mileage: 854413
+repairs: 1
+owners: 2
+
+trademark: toyota
+country: russia
+price: 88.080000
+color: green
+year: 1980
+mileage: 423185
+repairs: 4
+owners: 2
+
+trademark: audi
+country: china
+price: 89.910000
+color: red
+year: 1981
+mileage: 673610
+repairs: 0
+owners: 1
+
+trademark: toyota
+country: germany
+price: 99.610000
+color: black
+year: 1959
+mileage: 901288
+repairs: 1
+owners: 0
+
