@@ -204,6 +204,7 @@ int main(void)
     ordinary_matrix_t om;
     vector_t ov, ores;
     long n, m, n1, m1;
+    printf("Program multiplies a vector by a matrix.\n");
     printf("NOTE: matrix and vector are filled automatically by default. If you want to specify them, please, look menu.\n");
     printf("input number of rows: ");
     if (scanf("%ld", &n) != 1 || n <= 0)
