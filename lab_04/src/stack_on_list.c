@@ -39,8 +39,9 @@ int pop_from_stack_on_list(void *st, void *value)
     memmove(value, &stack->head->value, stack->size_of_element);
     void *adr = stack->head;
     push_back_to_vector(&stack->adrs, &adr);
-    free(stack->head);
+    node_t *head = stack->head;
     stack->head = stack->head->next;
+    free(head);
     stack->count--;
     return OK;
 }
@@ -53,5 +54,4 @@ void print_stack_on_list(void *st)
     }
     printf("free: ");
     print_vector_st(&stack->adrs);
-    printf("\n");
 }
