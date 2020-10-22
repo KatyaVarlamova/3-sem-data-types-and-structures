@@ -35,22 +35,28 @@ int is_inverse(char scope_lhs, char scope_rhs)
         return YES;
     return NO;
 }
-int is_right_position_of_scopes(FILE *f, void *stack, int (*push)(void *, void *), int (*pop)(void *, void *), void (*print) (void *), int is_to_print)
+int is_right_position_of_scopes(FILE *f, void *stack, int (*push)(void *, void *), int (*pop)(void *, void *), void (*print) (void *), int is_to_print, size_t *count)
 {
     rewind(f);
     int rv = YES;
     char value, pop_value;
+    *count = 0;
+    size_t k = 0;
     for (int c = fgetc(f); c != '\n' && c != EOF; c = fgetc(f))
     {
         value = c;
         if (value == '{' || value == '[' || value == '(')
         {
+            k++;
+            if (k > *count)
+                *count = k;
             push(stack, &value);
             if (is_to_print)
                 print(stack);
         }
         if (value == '}' || value == ']' || value == ')')
         {
+            k--;
             pop(stack, &pop_value);
             if (!is_inverse(pop_value, value))
                 rv = NO;
@@ -60,31 +66,37 @@ int is_right_position_of_scopes(FILE *f, void *stack, int (*push)(void *, void *
     }
     return rv;
 }
-void check_expression_arr(FILE *in_stream, int is_to_print)
+size_t check_expression_arr(FILE *in_stream, int is_to_print)
 {
     stack_on_array_t sa;
     init_stack_on_array(&sa, MAX_COUNT);
-    if (is_right_position_of_scopes(in_stream, &sa, push_to_stack_on_array, pop_from_stack_on_array, print_stack_on_array, is_to_print) == YES)
+    size_t max_size;
+    if (is_right_position_of_scopes(in_stream, &sa, push_to_stack_on_array, pop_from_stack_on_array, print_stack_on_array, is_to_print, &max_size) == YES)
     {
         if (is_to_print)
             printf("correct");
     }
     else if (is_to_print)
         printf("incorrect");
+    size_t size = sa.data.alloc_size * sa.size_of_element + sizeof(sa);
     delete_stack_on_array(&sa);
+    return size;
 }
-void check_expression_list(FILE *in_stream, int is_to_print)
+size_t check_expression_list(FILE *in_stream, int is_to_print)
 {
     stack_on_list_t sl;
     init_stack_on_list(&sl, MAX_COUNT);
-    if (is_right_position_of_scopes(in_stream, &sl,push_to_stack_on_list, pop_from_stack_on_list, print_stack_on_list, is_to_print) == YES)
+    size_t max_size;
+    if (is_right_position_of_scopes(in_stream, &sl,push_to_stack_on_list, pop_from_stack_on_list, print_stack_on_list, is_to_print, &max_size) == YES)
     {
         if (is_to_print)
             printf("correct");
     }
     else if (is_to_print)
         printf("incorrect");
+    size_t size = max_size * sizeof(node_t) + sizeof(sl) - sizeof(sl.adrs);
     delete_stack_on_list(&sl);
+    return size;
 }
 void push(void *stack, int (*push)(void *, void *))
 {
@@ -130,6 +142,7 @@ void statistics(FILE *in_stream)
 {
     struct timeval tv_start, tv_stop;
     int64_t time = 0;
+    size_t size = 0;
     printf("x--------------- x---------------x---------------x\n");
     printf("|     stack      |     time      |     memory    |\n");
     printf("x----------------x---------------x---------------x\n");
@@ -137,24 +150,25 @@ void statistics(FILE *in_stream)
     for (size_t j = 0; j < 1000; j++)
     {
         gettimeofday(&tv_start, NULL);
-        check_expression_list(in_stream, NO);
+        size = check_expression_list(in_stream, NO);
         gettimeofday(&tv_stop, NULL);
         time += (tv_stop.tv_sec - tv_start.tv_sec) * 1000000LL + (tv_stop.tv_usec - tv_start.tv_usec);
     }
     printf("%15.2lf|", time / 1000.0);
-    printf("%15zu|\n", sizeof(stack_on_list_t));
+    printf("%15zu|\n", size);
     printf("x----------------x---------------x---------------x\n");
     printf("|   on vector    |");
     time = 0;
+    size = 0;
     for (size_t j = 0; j < 1000; j++)
     {
         gettimeofday(&tv_start, NULL);
-        check_expression_arr(in_stream, NO);
+        size = check_expression_arr(in_stream, NO);
         gettimeofday(&tv_stop, NULL);
         time += (tv_stop.tv_sec - tv_start.tv_sec) * 1000000LL + (tv_stop.tv_usec - tv_start.tv_usec);
     }
     printf("%15.2lf|", time / 1000.0);
-    printf("%15zu|\n", sizeof(stack_on_array_t));
+    printf("%15zu|\n", size);
     printf("x----------------x---------------x---------------x\n");
     
 }

@@ -28,9 +28,10 @@ int push_back_to_vector(vector_t *v, void *elem)
         if (alloc_vector(&v_cp, v->size_of_element, v->alloc_size) == MEMORY_ERROR)
             return MEMORY_ERROR;
         v_cp.size = v->size;
+        v_cp.size_of_element = v->size_of_element;
         memmove(((char *)v_cp.front), ((char *)v->front), v->size_of_element * v->size);
         free_vector(v);
-        if (alloc_vector(v, v->size_of_element, v->size * 2) == MEMORY_ERROR)
+        if (alloc_vector(v, v_cp.size_of_element, v_cp.size * 2) == MEMORY_ERROR)
             return MEMORY_ERROR;
         v->size = v_cp.size;
         memmove(((char *)v->front), ((char *)v_cp.front), v->size_of_element * v_cp.size);

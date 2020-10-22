@@ -8,7 +8,7 @@
 #define MEMORY_ERROR 1
 #define LENGTH_ERROR 2
 #define OK 0
-#define INIT_SIZE 32
+#define INIT_SIZE 4
 typedef struct {
     vector_t data;
     elem_t *head;
