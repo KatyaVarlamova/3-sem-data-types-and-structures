@@ -11,7 +11,6 @@
 #define ERR                  1
 #define ERR_LEN              -1
 #define ERR_READ             2
-#define MAX_COUNT            5
 #define MAXLEN               300
 #define YES                  1
 #define NO                   0
@@ -46,7 +45,7 @@ int is_right_position_of_scopes(FILE *f, void *stack, int (*push)(void *, void *
 {
     rewind(f);
     int r;
-    char value, pop_value;
+    elem_t value, pop_value;
     *count = 0;
     size_t k = 0;
     for (int c = fgetc(f); c != '\n' && c != EOF; c = fgetc(f))
@@ -83,10 +82,10 @@ int is_right_position_of_scopes(FILE *f, void *stack, int (*push)(void *, void *
         return EMPTY_ERR;
     return RIRHT;
 }
-int check_expression_arr(FILE *in_stream, int is_to_print, size_t *size)
+int check_expression_arr(FILE *in_stream, int is_to_print, size_t *size, size_t max_count)
 {
     stack_on_array_t sa;
-    init_stack_on_array(&sa, MAX_COUNT);
+    init_stack_on_array(&sa, max_count);
     size_t max_size;
     int rv;
     if ((rv = is_right_position_of_scopes(in_stream, &sa, push_to_stack_on_array, pop_from_stack_on_array, print_stack_on_array, is_to_print, &max_size)) == RIRHT)
@@ -112,10 +111,10 @@ int check_expression_arr(FILE *in_stream, int is_to_print, size_t *size)
     delete_stack_on_array(&sa);
     return rv;
 }
-int check_expression_list(FILE *in_stream, int is_to_print, size_t *size)
+int check_expression_list(FILE *in_stream, int is_to_print, size_t *size, size_t max_count)
 {
     stack_on_list_t sl;
-    init_stack_on_list(&sl, MAX_COUNT);
+    init_stack_on_list(&sl, max_count);
     size_t max_size;
     int rv;
     if ((rv = is_right_position_of_scopes(in_stream, &sl,push_to_stack_on_list, pop_from_stack_on_list, print_stack_on_list, is_to_print, &max_size)) == RIRHT)
@@ -141,7 +140,7 @@ int check_expression_list(FILE *in_stream, int is_to_print, size_t *size)
     delete_stack_on_list(&sl);
     return rv;
 }
-void statistics(FILE *in_stream)
+void statistics(FILE *in_stream, size_t max_count)
 {
     struct timeval tv_start, tv_stop;
     int64_t time = 0;
@@ -151,7 +150,7 @@ void statistics(FILE *in_stream)
     printf("x----------------x---------------x---------------x\n");
     printf("| on linked list |");
     int rv;
-    if ((rv = check_expression_list(in_stream, NO, &size)) != RIRHT)
+    if ((rv = check_expression_list(in_stream, NO, &size, max_count)) != RIRHT)
     {
         printf("%15s|", "-");
         printf("%15s|", "-");
@@ -166,21 +165,21 @@ void statistics(FILE *in_stream)
     }
     else
     {
-        for (size_t j = 0; j < 1000; j++)
+        for (size_t j = 0; j < 10; j++)
         {
             gettimeofday(&tv_start, NULL);
-            check_expression_list(in_stream, NO, &size);
+            check_expression_list(in_stream, NO, &size, max_count);
             gettimeofday(&tv_stop, NULL);
             time += (tv_stop.tv_sec - tv_start.tv_sec) * 1000000LL + (tv_stop.tv_usec - tv_start.tv_usec);
         }
-        printf("%15.2lf|", time / 1000.0);
+        printf("%15.2lf|", time / 10.0);
         printf("%15zu|\n", size);
     }
     printf("x----------------x---------------x---------------x\n");
     printf("|   on vector    |");
     size = 0;
     time = 0;
-    if ((rv = check_expression_arr(in_stream, NO, &size)) != RIRHT)
+    if ((rv = check_expression_arr(in_stream, NO, &size, max_count)) != RIRHT)
     {
         printf("%15s|", "-");
         printf("%15s|", "-");
@@ -195,14 +194,14 @@ void statistics(FILE *in_stream)
     }
     else
     {
-        for (size_t j = 0; j < 1000; j++)
+        for (size_t j = 0; j < 10; j++)
         {
             gettimeofday(&tv_start, NULL);
-            check_expression_arr(in_stream, NO, &size);
+            check_expression_arr(in_stream, NO, &size, max_count);
             gettimeofday(&tv_stop, NULL);
             time += (tv_stop.tv_sec - tv_start.tv_sec) * 1000000LL + (tv_stop.tv_usec - tv_start.tv_usec);
         }
-        printf("%15.2lf|", time / 1000.0);
+        printf("%15.2lf|", time / 10.0);
         printf("%15zu|\n", size);
     }
     printf("x----------------x---------------x---------------x\n");
@@ -211,7 +210,7 @@ void statistics(FILE *in_stream)
 void push(void *stack, int (*push)(void *, void *))
 {
     printf("symbol: ");
-    int c = getc(stdin);
+    long c = getc(stdin);
     while (c == '\n' || c == ' ')
         c = getc(stdin);
     int rv = push(stack, &c);
@@ -249,17 +248,29 @@ void print_menu()
         "CHECK EXPRESSION WITH STACK ON LIST  8\n"
         "STATISTICS                           9\n");
 }
-int main(void)
+int main(int argc, char **argv)
 {
     printf("Program shows working of stacks based on dynamic array and list. It's possible to push to, pop from and print stacks.\n");
-    printf("Also, this program can read expression from file and determine if brackets in expression are put in correct way. This function works with both stacks: based on list and based on array. Compare efficiency of stacks is possible in statistics.\n");
-    FILE *in_stream = fopen("file.txt", "r");
+    printf("Also, this program can read expression from file (name should be given in command line args) and determine if brackets in expression are put in correct way. This function works with both stacks: based on list and based on array. Compare efficiency of stacks is possible in statistics.\n");
+    FILE *in_stream;
+    if (argc < 2 || (in_stream = fopen(argv[1], "r")) == NULL)
+    {
+        printf("error while opening file\n");
+        return ERR_READ;
+    }
+    size_t max_count;
+    printf("enter max size of stack: ");
+    if (scanf("%zu", &max_count) != 1 || max_count < 1)
+    {
+        printf("error while reading max size\n");
+        return ERR_READ;
+    }
     int choise;
     size_t size;
     stack_on_list_t sl;
     stack_on_array_t sa;
-    init_stack_on_list(&sl, MAX_COUNT);
-    init_stack_on_array(&sa, MAX_COUNT);
+    init_stack_on_list(&sl, max_count);
+    init_stack_on_array(&sa, max_count);
     print_menu();
     printf("action: ");
     if (scanf("%d", &choise) != 1)
@@ -281,7 +292,7 @@ int main(void)
                 print(&sa, print_stack_on_array);
                 break;
             case CHECK_EXPRESSION_WITH_STACK_ON_ARRAY:
-                check_expression_arr(in_stream, YES, &size);
+                check_expression_arr(in_stream, YES, &size, max_count);
                 break;
             case PUSH_TO_STACK_ON_LIST:
                 push(&sl, push_to_stack_on_list);
@@ -293,10 +304,10 @@ int main(void)
                 print(&sl, print_stack_on_list);
                 break;
             case CHECK_EXPRESSION_WITH_STACK_ON_LIST:
-                check_expression_list(in_stream, YES, &size);
+                check_expression_list(in_stream, YES, &size, max_count);
                 break;
             case STATISTICS:
-                statistics(in_stream);
+                statistics(in_stream, max_count);
                 break;
             default:
                 printf("there is no such action\n");

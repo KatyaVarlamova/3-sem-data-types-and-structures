@@ -23,7 +23,7 @@ int push_to_stack_on_array(void *st, void *value)
         return LENGTH_ERROR;
     if (push_back_to_vector(&stack->data, value) != OK)
         return MEMORY_ERROR;
-    stack->head = stack->data.front + stack->count;
+    stack->head = (elem_t *)((char *)stack->data.front + stack->count * stack->size_of_element);
     stack->count++;
     return OK;
 }
