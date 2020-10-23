@@ -1,5 +1,5 @@
 import random as random
-number = 1000000
+number = 600000
 f = open("text.txt", "w")
 open_sc = ['(', '{', '[']
 close_sc = [')', '}', ']']

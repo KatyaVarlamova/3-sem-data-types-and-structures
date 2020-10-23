@@ -31,6 +31,11 @@
 #define PRINT_STACK_ON_LIST                  7
 #define CHECK_EXPRESSION_WITH_STACK_ON_LIST  8
 #define STATISTICS                           9
+void zero_str(elem_t s)
+{
+    for (size_t i = 1; i < STRING_LENGTH; i++)
+        s[i] = '\0';
+}
 int is_inverse(char scope_lhs, char scope_rhs)
 {
     if (scope_lhs == '[' && scope_rhs == ']')
@@ -46,12 +51,14 @@ int is_right_position_of_scopes(FILE *f, void *stack, int (*push)(void *, void *
     rewind(f);
     int r;
     elem_t value, pop_value;
+    zero_str(value);
+    zero_str(pop_value);
     *count = 0;
     size_t k = 0;
     for (int c = fgetc(f); c != '\n' && c != EOF; c = fgetc(f))
     {
-        value = c;
-        if (value == '{' || value == '[' || value == '(')
+        value[0] = c;
+        if (value[0] == '{' || value[0] == '[' || value[0] == '(')
         {
             r = push(stack, &value);
             if (r == LENGTH_ERROR)
@@ -64,7 +71,7 @@ int is_right_position_of_scopes(FILE *f, void *stack, int (*push)(void *, void *
             if (is_to_print)
                 print(stack);
         }
-        if (value == '}' || value == ']' || value == ')')
+        if (value[0] == '}' || value[0] == ']' || value[0] == ')')
         {
             r = pop(stack, &pop_value);
             if (r == LENGTH_ERROR)
@@ -72,7 +79,7 @@ int is_right_position_of_scopes(FILE *f, void *stack, int (*push)(void *, void *
             else if (r != OK)
                 return MEM_ERR;
             k--;
-            if (!is_inverse(pop_value, value))
+            if (!is_inverse(pop_value[0], value[0]))
                 return COUNT_ERR;
             if (is_to_print)
                 print(stack);
@@ -210,9 +217,11 @@ void statistics(FILE *in_stream, size_t max_count)
 void push(void *stack, int (*push)(void *, void *))
 {
     printf("symbol: ");
-    long c = getc(stdin);
-    while (c == '\n' || c == ' ')
-        c = getc(stdin);
+    elem_t c;
+    zero_str(c);
+    c[0] = getc(stdin);
+    while (c[0] == '\n' || c[0] == ' ')
+        c[0] = getc(stdin);
     int rv = push(stack, &c);
     if (rv == LENGTH_ERROR)
         printf("impossible to push because of stack overflow\n");
@@ -221,12 +230,12 @@ void push(void *stack, int (*push)(void *, void *))
 }
 void pop(void *stack, int (*pop)(void *, void *))
 {
-    char c;
+    elem_t c;
     int rv = pop(stack, &c);
     if (rv == LENGTH_ERROR)
         printf("impossible to pop because stack is empty\n");
     else if (rv == OK)
-        printf("extracted value: %c\n", c);
+        printf("extracted value: %c\n", c[0]);
     else
         printf("errors with memory\n");
 }
@@ -259,7 +268,7 @@ int main(int argc, char **argv)
         return ERR_READ;
     }
     size_t max_count;
-    printf("enter max size of stack: ");
+    printf("enter max size of stack: \n");
     if (scanf("%zu", &max_count) != 1 || max_count < 1)
     {
         printf("error while reading max size\n");

@@ -50,7 +50,7 @@ void print_stack_on_list(void *st)
     stack_on_list_t *stack = st;
     for (node_t *cur = stack->head; cur != NULL; cur = cur->next)
     {
-        printf("element: "PR"located: %p\n", cur->value, cur);
+        printf("element: "PR"located: %p\n", cur->value[0], cur);
     }
     printf("free: ");
     print_vector_st(&stack->adrs);

@@ -46,6 +46,6 @@ void print_stack_on_array(void *st)
     stack_on_array_t *stack = st;
     elem_t *cur = stack->head;
     for (size_t i = 0; i < stack->count; cur--, i++)
-        printf(PR, *cur);
+        printf(PR, *cur[0]);
     printf("\n");
 }

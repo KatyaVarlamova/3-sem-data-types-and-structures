@@ -4,5 +4,6 @@
 #include <stdio.h>
 #define SC "%c"
 #define PR "%c "
-typedef char elem_t;
+#define STRING_LENGTH 1
+typedef char elem_t[STRING_LENGTH];
 #endif 

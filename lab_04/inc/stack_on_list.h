@@ -10,11 +10,13 @@
 #define LENGTH_ERROR 2
 #define OK 0
 #define INIT_SIZE 4
+#pragma pack(push, 1)
 typedef struct node
 {
     struct node *next;
     elem_t value;
 } node_t;
+#pragma pack(pop)
 typedef struct
 {
     node_t *head;
