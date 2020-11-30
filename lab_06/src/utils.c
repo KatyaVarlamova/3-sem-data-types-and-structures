@@ -1,0 +1,130 @@
+#include "utils.h"
+#define COUNT 10
+void stat_file(char *filename, elem_t *elem)
+{
+    struct timeval tv_start, tv_stop;
+    int64_t time = 0;
+    size_t size = 0;
+    int comp_av = 0;
+    stat_values_t stat;
+    for (int i = 0; i < COUNT; i++)
+    {
+        stat.comp_count = 0;
+        stat.elems_count = 0;
+        char *copy_name = make_file_copy(filename, reader_elem, print_elem);
+        gettimeofday(&tv_start, NULL);
+        delete_from_file(copy_name, elem, reader_elem, print_elem, compare_elems, &stat);
+        gettimeofday(&tv_stop, NULL);
+        time += (tv_stop.tv_sec - tv_start.tv_sec) * 1000000LL + (tv_stop.tv_usec - tv_start.tv_usec);
+        free_filename(copy_name);
+        comp_av += stat.comp_count;
+    }
+    size = 0;
+    printf("%15.2lf|", 1.0 * time / COUNT);
+    printf("%15zu|", size);
+    printf("%15.2lf|\n", 1.0 * comp_av / COUNT);
+}
+void stat_hash_table(char *filename, elem_t *elem, size_t size_table)
+{
+    struct timeval tv_start, tv_stop;
+    int64_t time = 0;
+    size_t size = 0;
+    int comp_av = 0;
+    stat_values_t stat;
+    size_t max_size_of_table = 0;
+    for (int i = 0; i < COUNT; i++)
+    {
+        stat.elems_count = 0;
+        stat.comp_count = 0;
+        hash_table_t *table = create_hash_table(size_table);
+        max_size_of_table = table->size;
+        read_hash_table(filename, table, reader_elem, &stat);
+        gettimeofday(&tv_start, NULL);
+        delete_hash_table_elem(table, elem, free_elem, compare_elems, &stat);
+        gettimeofday(&tv_stop, NULL);
+        time += (tv_stop.tv_sec - tv_start.tv_sec) * 1000000LL + (tv_stop.tv_usec - tv_start.tv_usec);
+        comp_av += stat.comp_count;
+        free_hash_table(&table, free_elem);
+    }
+    size = stat.elems_count * sizeof(node_t) + max_size_of_table * sizeof(node_t *) + sizeof(hash_table_t);
+    printf("%15.2lf|", 1.0 * time / COUNT);
+    printf("%15zu|", size);
+    printf("%15.2lf|\n", 1.0 * comp_av / COUNT);
+}
+void stat_bt(char *filename, elem_t *elem)
+{
+    struct timeval tv_start, tv_stop;
+    int64_t time = 0;
+    size_t size = 0;
+    int comp_av = 0;
+    stat_values_t stat;
+    tree_node_t n = {elem, NULL, NULL};
+    for (int i = 0; i < COUNT; i++)
+    {
+        stat.comp_count = 0;
+        tree_node_t *tree_root = read_tree(filename, reader_elem, compare_elems);
+        stat.elems_count = count_elems_tree(tree_root);
+        
+        gettimeofday(&tv_start, NULL);
+        tree_root = remove_tree_node(tree_root, &n, compare_elems, free_elem, &stat);
+        gettimeofday(&tv_stop, NULL);
+        time += (tv_stop.tv_sec - tv_start.tv_sec) * 1000000LL + (tv_stop.tv_usec - tv_start.tv_usec);
+        free_tree(tree_root, free_elem);
+        comp_av += stat.comp_count;
+    }
+    size = stat.elems_count * sizeof(tree_node_t);
+    printf("%15.2lf|", 1.0 * time / COUNT);
+    printf("%15zu|", size);
+    printf("%15.2lf|\n", 1.0 * comp_av / COUNT);
+}
+void stat_bbt(char *filename, elem_t *elem)
+{
+    struct timeval tv_start, tv_stop;
+    int64_t time = 0;
+    size_t size = 0;
+    int comp_av = 0;
+    stat_values_t stat;
+    balanced_tree_node_t bn = {elem, NULL, NULL};
+    for (int i = 0; i < COUNT; i++)
+    {
+        stat.comp_count = 0;
+        balanced_tree_node_t *btree_root = read_balanced_tree(filename, reader_elem, compare_elems);
+        stat.elems_count = count_elems_btree(btree_root);
+        gettimeofday(&tv_start, NULL);
+        btree_root = remove_balanced_tree_node(btree_root, &bn, compare_elems, free_elem, &stat);
+        gettimeofday(&tv_stop, NULL);
+        time += (tv_stop.tv_sec - tv_start.tv_sec) * 1000000LL + (tv_stop.tv_usec - tv_start.tv_usec);
+        free_balanced_tree(btree_root, free_elem);
+        comp_av += stat.comp_count;
+    }
+    size = stat.elems_count * sizeof(balanced_tree_node_t);
+    printf("%15.2lf|", 1.0 * time / COUNT);
+    printf("%15zu|", size);
+    printf("%15.2lf|\n", 1.0 * comp_av / COUNT);
+}
+void statistics(char *filename)
+{
+    printf("input size of table: ");
+    long size_table;
+    if (scanf("%ld", &size_table) != 1 || size_table <= 0)
+        return;
+    printf("input elem: ");
+    elem_t *elem = reader_elem(stdin);
+    printf("delete operation\n");
+    printf("x--------------- x---------------x---------------x---------------x\n");
+    printf("|  data struct   |     time      |     memory    |  comparisons  |\n");
+    printf("x----------------x---------------x---------------x---------------x\n");
+    printf("|     file       |");
+    stat_file(filename, elem);
+    printf("x----------------x---------------x---------------x---------------x\n");
+    printf("|   hash table   |");
+    stat_hash_table(filename, elem, size_table);
+    printf("x----------------x---------------x---------------x---------------x\n");
+    printf("|binary tree (BT)|");
+    stat_bt(filename, elem);
+    printf("x----------------x---------------x---------------x---------------x\n");
+    printf("|  balanced BT   |");
+    stat_bbt(filename, elem);
+    printf("x----------------x---------------x---------------x---------------x\n");
+    free_elem(elem);
+}
