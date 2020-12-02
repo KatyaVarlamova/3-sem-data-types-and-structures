@@ -15,28 +15,36 @@
 
 #define EXIT                                 0
 #define OUT_BINARY_TREE                      1
-#define DELETE_FROM_BINARY_TREE              2
-#define OUT_BALANCED_BINARY_TREE             3
-#define DELETE_FROM_BALANCED_BINARY_TREE     4
-#define OUT_HASH_TABLE                       5
-#define DELETE_FROM_HASH_TABLE               6
-#define OUT_COPY_OF_FILE                     7
-#define DELETE_FROM_COPY_OF_FILE             8
-#define STATISTICS                           9
+#define ADD_TO_BINARY_TREE                   2
+#define DELETE_FROM_BINARY_TREE              3
+#define OUT_BALANCED_BINARY_TREE             4
+#define ADD_TO_BALANCED_BINARY_TREE          5
+#define DELETE_FROM_BALANCED_BINARY_TREE     6
+#define OUT_HASH_TABLE                       7
+#define ADD_TO_HASH_TABLE                    8
+#define DELETE_FROM_HASH_TABLE               9
+#define RESTRUCT_HASH_TABLE                  10
+#define OUT_COPY_OF_FILE                     11
+#define DELETE_FROM_COPY_OF_FILE             12
+#define STATISTICS                           13
 
 void print_menu()
 {
     printf(
         "EXIT                                 0\n"
         "OUT BINARY TREE                      1\n"
-        "DELETE FROM BINARY TREE              2\n"
-        "OUT BALANCED BINARY TREE             3\n"
-        "DELETE FROM BALANCED BINARY TREE     4\n"
-        "OUT HASH TABLE                       5\n"
-        "DELETE FROM HASH TABLE               6\n"
-        "OUT COPY OF FILE                     7\n"
-        "DELETE FROM COPY OF FILE             8\n"
-        "STATISTICS                           9\n");
+        "ADD TO BINARY TREE                   2\n"
+        "DELETE FROM BINARY TREE              3\n"
+        "OUT BALANCED BINARY TREE             4\n"
+        "ADD TO BALANCED BINARY TREE          5\n"
+        "DELETE FROM BALANCED BINARY TREE     6\n"
+        "OUT HASH TABLE                       7\n"
+        "ADD TO HASH TABLE                    8\n"
+        "DELETE FROM HASH TABLE               9\n"
+        "RESTRUCT HASH TABLE                  10\n"
+        "OUT COPY OF FILE                     11\n"
+        "DELETE FROM COPY OF FILE             12\n"
+        "STATISTICS                           13\n");
 }
 
 int main(int argc, char **argv)
@@ -58,7 +66,7 @@ int main(int argc, char **argv)
     long size;
     if (scanf("%ld", &size) != 1 || size <= 0)
         return ERR_READ;
-    hash_table_t *table = create_hash_table(size);
+    hash_table_t *table = create_hash_table(size, hash_func_sum);
     stat_values_t stat;
     read_hash_table(argv[1], table, reader_elem, &stat);
     
@@ -80,6 +88,20 @@ int main(int argc, char **argv)
                 system("dot -Tpng viz/graph.gv -o viz/graph.png && open viz/graph.png");
                 break;
             }
+            case ADD_TO_BINARY_TREE:
+            {
+                printf("input elem: ");
+                elem_t *elem = reader_elem(stdin);
+                tree_node_t *n = create_tree_node(elem);
+                int added = 0;
+                tree_root = insert_tree_node(tree_root, n, compare_elems, &added);
+                if (added)
+                {
+                    printf("elem has been already added\n");
+                    delete_tree_node(&n, free_elem);
+                }
+                break;
+            }
                 case DELETE_FROM_BINARY_TREE:
             {
                 printf("input elem: ");
@@ -96,6 +118,20 @@ int main(int argc, char **argv)
                 system("dot -Tpng viz/bgraph.gv -o viz/bgraph.png && open viz/bgraph.png");
                 break;
             }
+            case ADD_TO_BALANCED_BINARY_TREE:
+            {
+                printf("input elem: ");
+                elem_t *elem = reader_elem(stdin);
+                balanced_tree_node_t *n = create_balanced_tree_node(elem);
+                int added = 0;
+                btree_root = insert_balanced_tree_node(btree_root, n, compare_elems, &added);
+                if (added)
+                {
+                    printf("elem has been already added\n");
+                    delete_balanced_tree_node(&n, free_elem);
+                }
+                break;
+            }
             case DELETE_FROM_BALANCED_BINARY_TREE:
             {
                 printf("input elem: ");
@@ -110,12 +146,43 @@ int main(int argc, char **argv)
                 print_hash_table(stdout, table, print_elem);
                 break;
             }
+            case ADD_TO_HASH_TABLE:
+            {
+                printf("input elem: ");
+                elem_t *elem = reader_elem(stdin);
+                insert_hash_table_elem(table, elem);
+                break;
+            }
             case DELETE_FROM_HASH_TABLE:
             {
                 printf("input elem: ");
                 elem_t *elem = reader_elem(stdin);
                 delete_hash_table_elem(table, elem, free_elem, compare_elems, &stat);
                 free_elem(elem);
+                break;
+            }
+            case RESTRUCT_HASH_TABLE:
+            {
+                printf("please, choose hash func:\n- sum -> 1\n- xor -> 2\n");
+                int ch;
+                if (scanf("%d", &ch) != 1)
+                    printf("read error\n");
+                if (ch == 1)
+                {
+                    if (table->hash_func_type != hash_func_sum)
+                        table = restruct(table, hash_func_sum);
+                    else
+                        printf("already was chosen this type of hash func\n");
+                }
+                else if (ch == 2)
+                {
+                    if (table->hash_func_type != hash_func_xor)
+                        table = restruct(table, hash_func_xor);
+                    else
+                        printf("already was chosen this type of hash func\n");
+                }
+                else
+                    printf("incorrect choise\n");
                 break;
             }
             case OUT_COPY_OF_FILE:

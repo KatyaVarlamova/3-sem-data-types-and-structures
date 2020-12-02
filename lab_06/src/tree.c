@@ -136,7 +136,10 @@ void tree_to_dot(char *name, tree_node_t *tree, void print_elem(FILE *f, const v
 {
     FILE *f = fopen(name ,"w");
     fprintf(f, "digraph test_tree {\n");
-    print_tree(f, tree, print_elem);
+    if (tree && tree->left == NULL && tree->right == NULL)
+        print_elem(f, tree->data);
+    else
+        print_tree(f, tree, print_elem);
     fprintf(f, "}\n");
     fclose(f);
 }

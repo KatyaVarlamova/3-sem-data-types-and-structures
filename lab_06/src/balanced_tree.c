@@ -182,7 +182,10 @@ void btree_to_dot(char *name,balanced_tree_node_t *tree, void print_elem(FILE *f
 {
     FILE *f = fopen(name ,"w");
     fprintf(f, "digraph test_tree {\n");
-    print_balanced_tree(f, tree, print_elem);
+    if (tree && tree->left == NULL && tree->right == NULL)
+        print_elem(f, tree->data);
+    else
+        print_balanced_tree(f, tree, print_elem);
     fprintf(f, "}\n");
     fclose(f);
 }
