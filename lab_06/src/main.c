@@ -56,6 +56,7 @@ int main(int argc, char **argv)
         return ERR_READ;
     }
     fclose(in_stream);
+    printf("Program shows working (delete operation) of BST, AVL-tree and hash table.\n");
     int choise;
     print_menu();
     

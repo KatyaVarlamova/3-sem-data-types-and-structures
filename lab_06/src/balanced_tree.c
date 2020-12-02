@@ -32,11 +32,17 @@ balanced_tree_node_t * read_balanced_tree(char *filename, void *(*reader)(FILE *
         int added = 0;
         node = create_balanced_tree_node(el);
         root = insert_balanced_tree_node(root, node, comp, &added);
+//        print_balanced_tree(stdout, root, print_elem);
+//        printf("\n");
         if (added == 1)
             delete_balanced_tree_node(&node, free_elem);
     }
     fclose(f);
     return root;
+}
+short get_height(balanced_tree_node_t *p)
+{
+    return p ? p->height : -1;
 }
 void print_balanced_tree(FILE *f, balanced_tree_node_t *tree, void print_elem(FILE *f, const void *elem))
 {
@@ -47,15 +53,19 @@ void print_balanced_tree(FILE *f, balanced_tree_node_t *tree, void print_elem(FI
         if (tree->left)
         {
             print_elem(f, tree->data);
+//            fprintf(f, "%hd", tree->height);
             fprintf(f, " -> ");
             print_elem(f, tree->left->data);
+//            fprintf(f, "%hd", get_height(tree->left));
             fprintf(f, "\n");
         }
         if (tree->right)
         {
             print_elem(f, tree->data);
+//            fprintf(f, "%hd", tree->height);
             fprintf(f, " -> ");
             print_elem(f, tree->right->data);
+//            fprintf(f, "%hd", get_height(tree->right));
             fprintf(f, "\n");
         }
     }
@@ -70,10 +80,6 @@ void free_balanced_tree(balanced_tree_node_t *tree, void (* free_elem)(void *val
     delete_balanced_tree_node(&tree, free_elem);
     free_balanced_tree(l, free_elem);
     free_balanced_tree(r, free_elem);
-}
-short get_height(balanced_tree_node_t *p)
-{
-    return p ? p->height : 0;
 }
 void update_height(balanced_tree_node_t *p)
 {
@@ -104,6 +110,12 @@ int b_factor(balanced_tree_node_t *node)
 static balanced_tree_node_t * balance(balanced_tree_node_t *node)
 {
     update_height(node);
+//    if (compare_elems(node->data, "acc") == 0)
+//    {
+//        printf("here\n");
+//        print_balanced_tree(stdout, node, print_elem);
+//        printf("%d\n\n", b_factor(node));
+//    }
     if (b_factor(node) == 2)
     {
         if (b_factor(node->right) < 0)
