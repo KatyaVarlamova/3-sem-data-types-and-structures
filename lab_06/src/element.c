@@ -42,6 +42,22 @@ void free_elem(void *val)
 {
     free(val);
 }
+void generate_xor_rands(xor_rands_t xor_rands)
+{
+    for (size_t i = 0; i < MAXLEN; i++)
+        xor_rands[i] = (rand() % 1280) / 10;
+}
+static size_t get_xor_sum(char *s, xor_rands_t xor_rands)
+{
+    size_t sum = 0;
+    for (size_t i = 0; s[i] != '\0'; i++)
+        sum += s[i] ^ xor_rands[i];
+    return sum;
+}
+size_t get_xor_key(elem_t *elem, xor_rands_t xor_rands)
+{
+    return get_xor_sum(elem->value, xor_rands);
+}
 static size_t get_sum(char *s)
 {
     size_t sum = 0;

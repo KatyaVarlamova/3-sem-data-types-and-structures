@@ -27,7 +27,7 @@
 #define OUT_COPY_OF_FILE                     11
 #define DELETE_FROM_COPY_OF_FILE             12
 #define STATISTICS                           13
-
+extern char xor_rands[256];
 void print_menu()
 {
     printf(
@@ -60,6 +60,7 @@ int main(int argc, char **argv)
     int choise;
     print_menu();
     
+    generate_xor_rands(xor_rands);
     tree_node_t *tree_root = read_tree(argv[1], reader_elem, compare_elems);
     balanced_tree_node_t *btree_root = read_balanced_tree(argv[1], reader_elem, compare_elems);
     
@@ -67,9 +68,14 @@ int main(int argc, char **argv)
     long size;
     if (scanf("%ld", &size) != 1 || size <= 0)
         return ERR_READ;
-    hash_table_t *table = create_hash_table(size, hash_func_sum);
+    printf("input max average conflicts in table: ");
+    double conflicts;
+    if (scanf("%lf", &conflicts) != 1 || conflicts < 1)
+        return ERR_READ;
+    hash_table_t *table = create_hash_table(size, hash_func_xor);
     stat_values_t stat;
     read_hash_table(argv[1], table, reader_elem, &stat);
+    table = reduce_conflicts_by_restruction_ht(table, conflicts);
     
     char *copy_name = make_file_copy(argv[1], reader_elem, print_elem);
     
@@ -164,21 +170,28 @@ int main(int argc, char **argv)
             }
             case RESTRUCT_HASH_TABLE:
             {
-                printf("please, choose hash func:\n- sum -> 1\n- xor -> 2\n");
+                printf("please, choose hash func:\n- sum -> 1\n- mul -> 2\n- xor -> 3\n");
                 int ch;
                 if (scanf("%d", &ch) != 1)
                     printf("read error\n");
                 if (ch == 1)
                 {
                     if (table->hash_func_type != hash_func_sum)
-                        table = restruct(table, hash_func_sum);
+                        table = restruct(table, hash_func_sum, table->size);
                     else
                         printf("already was chosen this type of hash func\n");
                 }
                 else if (ch == 2)
                 {
+                    if (table->hash_func_type != hash_func_mul)
+                        table = restruct(table, hash_func_mul, table->size);
+                    else
+                        printf("already was chosen this type of hash func\n");
+                }
+                else if (ch == 3)
+                {
                     if (table->hash_func_type != hash_func_xor)
-                        table = restruct(table, hash_func_xor);
+                        table = restruct(table, hash_func_xor, table->size);
                     else
                         printf("already was chosen this type of hash func\n");
                 }

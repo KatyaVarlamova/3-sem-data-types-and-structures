@@ -2,6 +2,7 @@
 #define hash_table_h
 
 #include <assert.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "element.h"
@@ -11,15 +12,22 @@
 #define LENGTH_ERROR 2
 #define OK 0
 
+typedef struct
+{
+    node_t *head;
+    size_t count;
+} list_t;
+
 typedef struct hash_table hash_table_t;
 
 typedef size_t (* hash_func_type_t)(elem_t *elem, hash_table_t *table);
 
 struct hash_table {
-    node_t **data;
+    list_t *data;
     size_t size;
-    size_t xor_const;
+    double mul_const;
     hash_func_type_t hash_func_type;
+    double av_conflicts;
 };
 
 hash_table_t * create_hash_table(size_t max_count, hash_func_type_t hash_func);
@@ -34,9 +42,13 @@ void delete_hash_table_elem(hash_table_t *table, elem_t *elem, void (* free_elem
 
 void insert_hash_table_elem(hash_table_t *table, elem_t *value);
 
-hash_table_t * restruct(hash_table_t *table, hash_func_type_t hash_func);
+hash_table_t * restruct(hash_table_t *table, hash_func_type_t hash_func, size_t new_size);
+
+hash_table_t * reduce_conflicts_by_restruction_ht(hash_table_t *table, double av_max);
 
 size_t hash_func_sum(elem_t *elem, hash_table_t *table);
+
+size_t hash_func_mul(elem_t *elem, hash_table_t *table);
 
 size_t hash_func_xor(elem_t *elem, hash_table_t *table);
 #endif

@@ -24,16 +24,20 @@ void stat_file(char *filename, elem_t *elem)
     printf("%15zu|", size);
     printf("%15.2lf|\n", (1.0 * comp_av));
 }
-void stat_hash_table(char *filename, elem_t *elem, size_t size_table, hash_func_type_t hash_func)
+void stat_hash_table(char *filename, elem_t *elem, size_t size_table, double conflicts)
 {
     struct timeval tv_start, tv_stop;
     int64_t time = 0;
     size_t size = 0;
     int comp_av = 0;
     stat_values_t stat;
-    size_t max_size_of_table = 0;
     char *copy = make_file_copy(filename, reader_elem, print_elem);
     FILE *f = fopen(copy, "r");
+    
+    hash_table_t *table = create_hash_table(size_table, hash_func_sum);
+    read_hash_table(filename, table, reader_elem, &stat);
+    table = reduce_conflicts_by_restruction_ht(table, conflicts);
+    
     int read = 0;
     if (elem == NULL)
         read = 1;
@@ -41,8 +45,6 @@ void stat_hash_table(char *filename, elem_t *elem, size_t size_table, hash_func_
     {
         stat.elems_count = 0;
         stat.comp_count = 0;
-        hash_table_t *table = create_hash_table(size_table, hash_func);
-        max_size_of_table = table->size;
         if (read)
         {
             elem = reader_elem(f);
@@ -58,15 +60,17 @@ void stat_hash_table(char *filename, elem_t *elem, size_t size_table, hash_func_
         gettimeofday(&tv_start, NULL);
         delete_hash_table_elem(table, elem, free_elem, compare_elems, &stat);
         gettimeofday(&tv_stop, NULL);
+        for (size_t i = 0; i < table->size; i++)
+            free_list(&(table->data[i].head), free_elem);
         if (read)
             free_elem(elem);
         time += (tv_stop.tv_sec - tv_start.tv_sec) * 1000000LL + (tv_stop.tv_usec - tv_start.tv_usec);
         comp_av += stat.comp_count;
-        free_hash_table(&table, free_elem);
     }
     fclose(f);
     free_filename(copy);
-    size = stat.elems_count * sizeof(node_t) + max_size_of_table * sizeof(node_t *) + sizeof(hash_table_t);
+    size = stat.elems_count * sizeof(node_t) + table->size * sizeof(list_t) + sizeof(hash_table_t);
+    free_hash_table(&table, free_elem);;
     printf("%15.2lf|", (1.0 * time) / COUNT);
     printf("%15zu|", size);
     printf("%15.2lf|\n", (1.0 * comp_av) / COUNT);
@@ -171,17 +175,12 @@ void statistics(char *filename)
     long size_table;
     if (scanf("%ld", &size_table) != 1 || size_table <= 0)
         return;
-    printf("please, choose hash func:\n- sum -> 1\n- xor -> 2\n");
-    int ch;
-    if (scanf("%d", &ch) != 1 || ch < 1 || ch > 2)
-        printf("read error\n");
-    hash_func_type_t hf = hash_func_sum;
-    if (ch == 1)
-        hf = hash_func_sum;
-    if (ch == 2)
-        hf = hash_func_xor;
+    printf("input max average conflicts in table: ");
+    double conflicts;
+    if (scanf("%lf", &conflicts) != 1 || conflicts < 1)
+        return;
     printf("input elem: ");
-    elem_t *elem = reader_elem(stdin); // aahkh
+    elem_t *elem = reader_elem(stdin); 
     printf("delete operation of element:\n");
     printf("x--------------- x---------------x---------------x---------------x\n");
     printf("|  data struct   |     time      |     memory    |  comparisons  |\n");
@@ -190,7 +189,7 @@ void statistics(char *filename)
     stat_file(filename, elem);
     printf("x----------------x---------------x---------------x---------------x\n");
     printf("|   hash table   |");
-    stat_hash_table(filename, elem, size_table, hf);
+    stat_hash_table(filename, elem, size_table, conflicts);
     printf("x----------------x---------------x---------------x---------------x\n");
     printf("|binary tree (BT)|");
     stat_bt(filename, elem);
@@ -207,7 +206,7 @@ void statistics(char *filename)
     stat_file(filename, elem);
     printf("x----------------x---------------x---------------x---------------x\n");
     printf("|   hash table   |");
-    stat_hash_table(filename, NULL, size_table, hf);
+    stat_hash_table(filename, NULL, size_table, conflicts);
     printf("x----------------x---------------x---------------x---------------x\n");
     printf("|binary tree (BT)|");
     stat_bt(filename, NULL);
