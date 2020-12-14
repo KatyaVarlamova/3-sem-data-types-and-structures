@@ -6,14 +6,14 @@
 #include "vector.h"
 
 #define INIT_SIZE 16
-// /usr/local/Cellar/graphviz/2.44.1/bin:/opt/local/bin:/opt/local/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+
 const int INF = INT_MAX;
 
 int min(int a, int b)
 {
     return (a < b) ? a : b;
 }
-int * solve(vector_t *e, size_t n, size_t v, int *cycle_vertex) {
+int * bellman_ford(vector_t *e, size_t n, size_t v, int *cycle_vertex) {
     size_t m = e->size;
     int *d = calloc(n + 1, sizeof(int));
     for (size_t i = 0; i < n + 1; i++)
@@ -26,12 +26,17 @@ int * solve(vector_t *e, size_t n, size_t v, int *cycle_vertex) {
         for (int j = 0; j < m; ++j)
             if (d[e->front[j]->src] < INF)
             {
+                if (d[e->front[j]->src] + e->front[j]->cost < d[e->front[j]->dst])
+                    *cycle_vertex = e->front[j]->dst;
                 d[e->front[j]->dst] = min (d[e->front[j]->dst], d[e->front[j]->src] + e->front[j]->cost);
-                *cycle_vertex = e->front[j]->dst;
             }
     }
     return d;
 }
+
+/*
+ to see graph set env: PATH = /usr/local/Cellar/graphviz/2.44.1/bin:/opt/local/bin:/opt/local/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+ */
 int main(int argc, char **argv)
 {
     printf("program finds all vertices of the graph that can be reached from a given vertex on a path no longer than A. \nList of vertices must be given in file. \n");
@@ -67,7 +72,7 @@ int main(int argc, char **argv)
     int cycle_vertex;
     struct timeval tv_start, tv_stop;
     gettimeofday(&tv_start, NULL);
-    int *d = solve(e, n, v, &cycle_vertex);
+    int *d = bellman_ford(e, n, v, &cycle_vertex);
     gettimeofday(&tv_stop, NULL);
     int64_t time = (tv_stop.tv_sec - tv_start.tv_sec) * 1000000LL + (tv_stop.tv_usec - tv_start.tv_usec);
     if (cycle_vertex != -1)
@@ -93,3 +98,4 @@ int main(int argc, char **argv)
     fclose(f);
     return 0;
 }
+
